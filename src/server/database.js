@@ -3,7 +3,7 @@ import 'dotenv/config';
 import mongoose from 'mongoose';
 
 const mongooseOptions = {
-  connectTimeoutMS: 30000,
+  connectTimeoutMS: 30000, 
   keepAlive: true,
   useNewUrlParser: true,
   useFindAndModify: false,

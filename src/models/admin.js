@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 const { Schema } = mongoose;
+const opts = { toJSON: { virtuals: true } };
 
 const AdminSchema = new Schema({
   username: {
@@ -20,11 +21,15 @@ const AdminSchema = new Schema({
     unique: true,
     sparse: true,
   },
+  role: {
+    type: String,
+    default: 'admin',
+  },
   date: {
     type: Date,
     default: Date.now,
   },
-});
+}, opts);
 
 const Admin = mongoose.model('Admin', AdminSchema);
 export default Admin;

@@ -4,13 +4,13 @@ import passport from 'passport'
 const router = Router()
 
 router.get('/google', passport.authenticate('google', {
-    scope: ['profile', 'email']
+    scope: ['email', 'username']
 }))
 
 const clientUrl = process.env.CLIENT_URL
 
 router.get('/google/callback', passport.authenticate('google', {
-    failureRedirect: '/',
+    failureRedirect: '/users/login',
     session: false
 }),
     (req, res) => {

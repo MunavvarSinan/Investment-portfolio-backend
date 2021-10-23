@@ -4,6 +4,9 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt-nodejs';
 import ActiveSession from '../models/activeSession';
 import User from '../models/user';
+import InvestedAmount from '../models/investedAmount';
+import { OAuth2Client} from 'google-auth-library'
+const admin = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 
 const adminSchema = Joi.object().keys({
   email: Joi.string().email().required(),
@@ -137,13 +140,55 @@ export default {
       res.json({ success: true, users });
     });
   },
-  deleteUser: (req, res) => {
-    User.findByIdAndDelete({ _id: req.params.id }, (err, result) => {
-      if (err) {
-        res.json({ success: false });
-      } else {
-        res.json({ success: true });
-      }
+  deleteUser: (req, res, next) => {
+    const { id } = req.params.id;
+    User.findByIdAndDelete(req.params.id, req.body, function (err, user) {
+      if (err) return next(err);
+      res.json(user);
     });
   },
+  editUserDetails: async (req, res, next) => {
+    User.findById(req.params.id, (err, data) => {
+      // const { investedAmount, currentAmount } = req.body;
+      // const profitAndLoss = currentAmount - investedAmount
+      if (!data) return next(new Error('Unable to fetch user details'));
+      else {
+        data.username = req.body.username;
+        data.email = req.body.email;
+        data.investedAmount = req.body.investedAmount;
+        data.currentAmount = req.body.currentAmount;
+        data.profitAndLoss = req.body.profitAndLoss;
+      }
+      data
+        .save()
+        .then((usr) => {
+          res.json('User updated successfully');
+        })
+        .catch((err) => {
+          res.status(400).send('Unable to update user');
+        });
+    });
+  },
+  googleLogin : async (req, res) => {
+    const { token } = req.body;
+
+    const ticket = await admin.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID
+    })
+
+    const { name, email, picture } = ticket.getPayload();
+
+    const user = await db.user.upsert({
+      where: {email: email},
+      update: { name, picture},
+      create: { name, email, picture}
+
+    })
+    req.session.userId = user.id
+
+    res.status(201);
+    res.json(user)
+  }
+
 };

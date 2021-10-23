@@ -7,11 +7,11 @@ const router = express.Router();
 router.post('/register', adminController.adminRegister);
 router.post('/login', adminController.adminLogin);
 router.post('/logout', checkToken, adminController.adminLogout);
-router.post('/getAllAdmins', adminController.getAllAdmin);
-router.post('/getAllUsers', adminController.getAllUsers);
+router.get('/getAllAdmins', adminController.getAllAdmin);
+router.get('/getAllUsers', adminController.getAllUsers);
 router.post('/checkSession', checkToken, (_req, res) => {
   res.json({ success: true });
 });
-router.post('/delete/:id', adminController.deleteUser);
-
+router.delete('/delete/:id', adminController.deleteUser);
+router.post('/editUser/:id', adminController.editUserDetails);
 export default router;
