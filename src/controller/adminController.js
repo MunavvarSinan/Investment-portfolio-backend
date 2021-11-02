@@ -154,8 +154,6 @@ export default {
   },
   editUserDetails: async (req, res, next) => {
     User.findById(req.params.id, (err, data) => {
-      // const { investedAmount, currentAmount } = req.body;
-      // const profitAndLoss = currentAmount - investedAmount
       if (!data) return next(new Error('Unable to fetch user details'));
       else {
         data.username = req.body.username;
@@ -191,7 +189,7 @@ export default {
       history
         .save()
         .then((usr) => {
-          res.json({ success: true, usr });
+          res.json({ success: true});
         })
         .catch((err) => console.log(err));
       // history.populate('transactionHistory')

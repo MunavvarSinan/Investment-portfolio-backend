@@ -1,0 +1,1 @@
+{"version":3,"sources":["../../src/config/config.js"],"names":["webURL"],"mappings":";;;;;kBACe;AACbA,UAAQ;AADK,C","file":"config.js","sourcesContent":["\r\nexport default {\r\n  webURL: 'https://localhost:5000/',\r\n};\r\n"]}

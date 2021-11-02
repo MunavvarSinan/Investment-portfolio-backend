@@ -15,8 +15,8 @@ export const prepareDB = async () => {
   const server = process.env.MONGO_URI
 
   const start = () => {
-    const mongoUri = server?.getUri();
-    mongoose.connect(mongoUri, mongooseOptions, (err) => {
+    // const mongoUri = server?.getUri();
+    mongoose.connect(server, mongooseOptions, (err) => {
       if (err) console.error(err);
     });
   };
