@@ -178,13 +178,15 @@ export default {
   resetPassword: (req, res) => {
     if (req.body.email == '') {
       res.status(400).send('Email required');
+      return res.json({success: false , msg: 'Email address is wrong'})
     }
     console.error(req.body.email);
 
     User.findOne({ email: req.body.email }).then((user) => {
-      if (user == null) {
+      if (!user) {
         console.error('Email not found!');
-        res.status(403).send('Email not found!');
+        // res.status(403).send('Email not found!');
+        return res.json({ success: false, msg: 'No user found with this Email' });
       } else {
         const token = jwt.sign({ _id: user.id }, process.env.SECRET, {
           expiresIn: '20m',
@@ -207,6 +209,7 @@ export default {
           transporter.sendMail(mailOptions, (err, response) => {
             if (err) {
               console.error('There was an error: ', err);
+              return  res.json({success: false, msg: 'Error sending mail'})
             } else {
               console.log('here is the res: ', response);
               res
