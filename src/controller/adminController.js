@@ -4,10 +4,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt-nodejs';
 import ActiveSession from '../models/activeSession';
 import User from '../models/user';
-import { OAuth2Client } from 'google-auth-library';
-import TransctionHistory from '../models/transactionHistory';
 import TransactionHistory from '../models/transactionHistory';
-const admin = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const adminSchema = Joi.object().keys({
   email: Joi.string().email().required(),
@@ -204,26 +201,6 @@ export default {
     });
   },
 
-  googleLogin: async (req, res) => {
-    const { token } = req.body;
-
-    const ticket = await admin.verifyIdToken({
-      idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-
-    const { name, email, picture } = ticket.getPayload();
-
-    const user = await db.user.upsert({
-      where: { email: email },
-      update: { name, picture },
-      create: { name, email, picture },
-    });
-    req.session.userId = user.id;
-
-    res.status(201); 
-    res.json(user);
-  },
   addUsers: (req, res) => {
     const result = userSchema.validate(req.body);
     if (result.error) {
