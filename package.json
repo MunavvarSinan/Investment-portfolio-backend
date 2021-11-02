@@ -10,7 +10,7 @@
     "babel-build": "babel -d ./build ./src -s",
     "clean": "mkdir build",
     "server": "nodemon --experimental-specifier-resolution=node src/index.js",
-    "heroku-postbuild": "cd frontend && npm install && npm run build"
+    "heroku-postbuild": "cd.. && cd frontend && npm install && npm run build"
   },
   "author": "Munavvar Sinan kp",
   "license": "ISC",
