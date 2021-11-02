@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "node src/index.js",
-    "server": "nodemon --experimental-specifier-resolution=node src/index.js"
+    "server": "nodemon --experimental-specifier-resolution=node src/index.js",
+    "heroku-postbuild": "npm run build"
   },
   "author": "Munavvar Sinan kp",
   "license": "ISC",
