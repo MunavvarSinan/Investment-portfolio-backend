@@ -3,9 +3,7 @@
   "version": "1.0.0",
   "description": "smart-funds backend server ",
   "main": "src/index.js",
-  "engines": {
-    "node": "6.9.0"
-  },
+
   "scripts": {
     "heroku-postbuild": "npm install",
     "start": "babel-node src/index.js",
