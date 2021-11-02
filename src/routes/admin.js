@@ -1,6 +1,6 @@
 import express from 'express';
-import { checkToken } from '../config/safeRoutes';
-import adminController from '../controller/adminController';
+import { checkToken } from '../config/safeRoutes.js';
+import adminController from '../controller/adminController.js';
 
 const router = express.Router();
 

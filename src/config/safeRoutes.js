@@ -1,4 +1,5 @@
-import ActiveSession from '../models/activeSession';
+
+import ActiveSession from '../models/activeSession.js';
 
 // eslint-disable-next-line import/prefer-default-export
 export const checkToken = (req, res, next) => {

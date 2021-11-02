@@ -1,10 +1,10 @@
-import User from '../models/user';
+import User from '../models/user.js';
 import Joi from 'joi';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt-nodejs';
-import ActiveSession from '../models/activeSession';
+import ActiveSession from '../models/activeSession.js';
 import nodemailer from 'nodemailer';
-import TransactionHistory from '../models/transactionHistory';
+import TransactionHistory from '../models/transactionHistory.js';
 
 const userSchema = Joi.object().keys({
   email: Joi.string().email().required(),

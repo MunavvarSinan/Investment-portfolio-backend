@@ -1,7 +1,7 @@
 import passport from 'passport';
 import { ExtractJwt, Strategy as JwtStrategy } from 'passport-jwt';
 
-import User from '../models/user';
+import User from '../models/user.js';
 
 export const initPassport = () => {
   const opts = {
@@ -24,5 +24,5 @@ export const initPassport = () => {
     })
   );
 
-  const serverUrl = process.env.SERVER_URL;
+  // const serverUrl = process.env.SERVER_URL;
 };

@@ -1,6 +1,6 @@
-import 'dotenv/config';
+import 'dotenv/config.js';
 import http from 'http';
-import server from './server';
+import server from './server/index.js';
 
 const PORT = process.env.PORT || 5000;
 http.createServer({}, server).listen(PORT, () => {

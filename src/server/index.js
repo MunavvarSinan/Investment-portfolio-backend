@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import 'dotenv/config.js';
 
 import compression from 'compression';
 import cors from 'cors';
@@ -8,7 +8,7 @@ import passport from 'passport';
 
 import { initPassport } from '../config/passport.js';
 import users from '../routes/users.js';
-import admin from '../routes/admin';
+import admin from '../routes/admin.js';
 
 import db from './database.js';
 const server = express();
