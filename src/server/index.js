@@ -11,7 +11,6 @@ import users from '../routes/users.js';
 import admin from '../routes/admin';
 
 import db from './database.js';
-import googleLogin from '../routes/googleAuth.js'
 const server = express();
 server.use(compression());
 
@@ -27,6 +26,5 @@ server.use(express.json());
 
 server.use('/api/users', users);
 server.use('/api/admin', admin);
-server.use('/auth', googleLogin)
 
 export default server;

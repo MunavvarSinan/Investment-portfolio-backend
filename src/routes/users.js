@@ -28,5 +28,13 @@ router.post('/googleLogin', (req, res) => {
 router.post('/all', checkToken, userController.getAllUsers);
 
 router.post('/edit/id', checkToken, userController.editUser);
+router.get('/getTransactionHistory/:id', userController.getTransactionHistory)
+router.post('/reset-password', userController.resetPassword);
+router.post('/new-password', userController.newPassword);
+router.get('/reset', userController.reset )
+router.post('/change-password', userController.changePassword);
+router.post('/request', userController.addOrWithdrawRequest)
+
 
 export default router;
+ 

@@ -13,5 +13,7 @@ router.post('/checkSession', checkToken, (_req, res) => {
   res.json({ success: true });
 });
 router.delete('/delete/:id', adminController.deleteUser);
+router.delete('/deleteAdmin/:id', adminController.deleteAdmin);
 router.post('/editUser/:id', adminController.editUserDetails);
+router.post('/addTransactionHistory/:id', adminController.addTransactionHistory)
 export default router;

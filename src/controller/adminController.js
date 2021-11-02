@@ -4,9 +4,10 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt-nodejs';
 import ActiveSession from '../models/activeSession';
 import User from '../models/user';
-import InvestedAmount from '../models/investedAmount';
-import { OAuth2Client} from 'google-auth-library'
-const admin = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
+import { OAuth2Client } from 'google-auth-library';
+import TransctionHistory from '../models/transactionHistory';
+import TransactionHistory from '../models/transactionHistory';
+const admin = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const adminSchema = Joi.object().keys({
   email: Joi.string().email().required(),
@@ -138,13 +139,20 @@ export default {
         return x;
       });
       res.json({ success: true, users });
+      console.log(users);
     });
   },
   deleteUser: (req, res, next) => {
-    const { id } = req.params.id;
     User.findByIdAndDelete(req.params.id, req.body, function (err, user) {
       if (err) return next(err);
       res.json(user);
+    });
+  },
+  deleteAdmin: (req, res, next) => {
+    
+    Admin.findByIdAndDelete(req.params.id, req.body, function (err, admin) {
+      if (err) return next(err);
+      res.json(admin);
     });
   },
   editUserDetails: async (req, res, next) => {
@@ -169,26 +177,89 @@ export default {
         });
     });
   },
-  googleLogin : async (req, res) => {
+  addTransactionHistory: async (req, res, next) => {
+    const { id } = req.params;
+    const { email, amount, date } = req.body;
+
+    User.findById(id, (err, data) => {
+      // .populate('transactionHistory')
+      // .exec((err, res) => {
+      if (!data) return next(new Error('Unable to fetch user details'));
+      const history = new TransactionHistory({
+        // _id: id,
+        email: email,
+        amount: amount,
+        date: date,
+      });
+      history
+        .save()
+        .then((usr) => {
+          res.json({ success: true, usr });
+        })
+        .catch((err) => console.log(err));
+      // history.populate('transactionHistory')
+      console.log(data.transactionHistory);
+
+      console.log(history);
+    });
+  },
+
+  googleLogin: async (req, res) => {
     const { token } = req.body;
 
     const ticket = await admin.verifyIdToken({
       idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID
-    })
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
 
     const { name, email, picture } = ticket.getPayload();
 
     const user = await db.user.upsert({
-      where: {email: email},
-      update: { name, picture},
-      create: { name, email, picture}
+      where: { email: email },
+      update: { name, picture },
+      create: { name, email, picture },
+    });
+    req.session.userId = user.id;
 
+    res.status(201); 
+    res.json(user);
+  },
+  addUsers: (req, res) => {
+    const result = userSchema.validate(req.body);
+    if (result.error) {
+      res.status(422).json({
+        success: false,
+        msg: `Validation err: ${result.error.details[0].message}`,
+      });
+      return;
+    }
+
+    const { username, mobileNumber, email, password} = req.body;
+
+    User.findOne({ email}).then((user) => {
+      if(user) {
+        res.json({success: false, msg: "Email already exists"});
+      } else {
+        bcrypt.genSalt(10, (err, salt) => {
+          bcrypt.hash(password, salt, null, (err2, hash) => {
+            if (err2) throw err2;
+            const query = {
+              username,
+              mobileNumber,
+              email,
+              password: hash,
+            };
+            User.create(query, (err3, createdUser) => {
+              if (err3) console.log(err3);;
+              res.json({
+                success: true,
+                userID: createdUser._id,
+                msg: 'The user was succesfully registered',
+              });
+            });
+          });
+        })
+      }
     })
-    req.session.userId = user.id
-
-    res.status(201);
-    res.json(user)
-  }
-
+  },
 };

@@ -16,6 +16,10 @@ const UserSchema = new Schema(
       type: String,
       required: true,
     },
+    mobileNumber: {
+      type: Number,
+      required: true,
+    },
     googleId: {
       type: String,
       unique: true,
@@ -40,15 +44,16 @@ const UserSchema = new Schema(
     profitAndLoss: {
       type: Number,
       required: true,
-      default: 0,
+      default: 0, 
     },
-    transactionHistory: [
-      {
-        type: Schema.Types.ObjectId,
-        // required: true,
-        ref: 'transactionHistory',
-      },
-    ],
+    transactionHistory: {
+      type: Schema.Types.ObjectId,
+      // required: true,
+      ref: 'transactionHistory',
+      autopopulate: true
+    },
+    resetToken:String,
+    expireToken:Date,
     date: {
       type: Date,
       default: Date.now,

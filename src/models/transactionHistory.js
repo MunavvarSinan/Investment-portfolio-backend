@@ -4,16 +4,17 @@ const { Schema } = mongoose;
 
 const transactionHistorySchema = new Schema({
   email :{
-      type: Schema.Types.ObjectId,
+      type:String,
       required: true
   },
   amount: {
-    type: number,
+    type: String,
     required: true
   },
   date: {
     type: Date,
     required: true,
+    default : Date.now
   }
 })
 

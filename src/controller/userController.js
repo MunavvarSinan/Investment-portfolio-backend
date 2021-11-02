@@ -3,13 +3,22 @@ import Joi from 'joi';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt-nodejs';
 import ActiveSession from '../models/activeSession';
-import sgMail from '@sendgrid/mail';
-import firebaseAdmin from 'firebase-admin';
-import { OAuth2Client } from 'google-auth-library';
+import nodemailer from 'nodemailer';
+import TransactionHistory from '../models/transactionHistory';
+
 const userSchema = Joi.object().keys({
   email: Joi.string().email().required(),
   username: Joi.string().alphanum().min(4).max(15).optional(),
+  mobileNumber: Joi.number().optional(),
   password: Joi.string().required(),
+});
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'smartfunds54@gmail.com',
+    pass: 'smartfunds5433',
+  },
 });
 
 export default {
@@ -24,7 +33,7 @@ export default {
       return;
     }
 
-    const { username, email, password } = req.body;
+    const { username, email, password, mobileNumber } = req.body;
 
     User.findOne({ email }).then((user) => {
       if (user) {
@@ -35,11 +44,12 @@ export default {
             if (err2) throw err2;
             const query = {
               username,
+              mobileNumber,
               email,
               password: hash,
             };
             User.create(query, (err3, createdUser) => {
-              if (err3) console.log(err3);;
+              if (err3) console.log(err3);
               res.json({
                 success: true,
                 userID: createdUser._id,
@@ -48,35 +58,6 @@ export default {
             });
           });
         });
-        // const token = jwt.sign(user.toJSON(), process.env.SECRET, {
-        //   expiresIn: '5m', // 1 week
-        // });
-
-        // const emailData = {
-        //   from: 'admin@smartfunds.co.in',
-        //   to: email,
-        //   subject: 'Account activation link',
-        //   html: `
-        //   <h1>Please use the following to activate your account</h1>
-        //   <p>${process.env.CLIENT_URL}/users/activate/${token}</p>
-        //   <hr />
-        //   <p>This email may containe sensetive information</p>
-        //   <p>${process.env.CLIENT_URL}</p>
-        //   `,
-        // };
-        // sgMail
-        //   .send(emailData)
-        //   .then((sent) => {
-        //     return res.json({
-        //       message: `Email sent successfully to ${email}`,
-        //     });
-        //   })
-        //   .catch((err) => {
-        //     return res.status(400).jdon({
-        //       success: false,
-        //       errors: err,
-        //     });
-        //   });
       }
     });
   },
@@ -111,7 +92,7 @@ export default {
             throw new Error('SECRET not provided');
           }
           const token = jwt.sign(user.toJSON(), process.env.SECRET, {
-            expiresIn: '1d', // 1 week
+            expiresIn: 86400, // 1 week
           });
 
           const query = { userId: user._id, token };
@@ -160,7 +141,9 @@ export default {
     User.find({ _id: userID }).then((user) => {
       if (user.length === 1) {
         const query = { _id: user[0]._id };
-        const newvalues = { $set: { username, email, investedAmount, currentAmount } };
+        const newvalues = {
+          $set: { username, email, investedAmount, currentAmount },
+        };
         User.updateOne(query, newvalues, null, (err) => {
           if (err) {
             // eslint-disable-next-line max-len
@@ -176,127 +159,162 @@ export default {
       }
     });
   },
-  addPayment: (req, res) => {
-    const { email, userID , addAmount} = req.body;
-    console.log(email);
-    const idempontencyKey = uuid()
+  getTransactionHistory: (req, res) => {
+    const { id } = req.params;
+    // const { email } = req.body
+    User.findById(id, (err, result) => {
+      const { email } = result;
+      TransactionHistory.find({ email }, (err, data) => {
+        if (err) {
+          res.json({ success: false });
+          console.log(err);
+        }
+        // console.log(data);
+        res.json({ succss: true, data });
+      });
+      console.log(result);
+    });
+  },
+  resetPassword: (req, res) => {
+    if (req.body.email == '') {
+      res.status(400).send('Email required');
+    }
+    console.error(req.body.email);
 
-    return stripe.customers.create({
-      email: email,
-      // source: userID
-    }).then(customer => {
-      stripe.charges.create({
-        amount: addAmount * 100
-      }, {idempotencyKey})
-    })
-    .then(result => res.status(200).json(result))
-    .catch(err => console.log(err))
-  }
-  // googleController: (req, res) => {
-  //   const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-  //   const { idToken } = req.body;
+    User.findOne({ email: req.body.email }).then((user) => {
+      if (user == null) {
+        console.error('Email not found!');
+        res.status(403).send('Email not found!');
+      } else {
+        const token = jwt.sign({ _id: user.id }, process.env.SECRET, {
+          expiresIn: '20m',
+        });
 
-  //   client
-  //     .verifyIdToken({ idToken, audience: process.env.GOOGLE_CLIENT })
-  //     .then((res) => {
-  //       const { email, username } = res.payload;
-  //       if (email) {
-  //         User.findOne({ email }).exec((err, user) => {
-  //           if (user) {
-  //             const token = jwt.sign(user.toJSON(), process.env.SECRET, {
-  //               expiresIn: '1d', // 1 week
-  //             });
+        user.resetToken = token;
+        user.save().then((result) => {
+          const mailOptions = {
+            from: 'smartfunds54@gmail.com',
+            to: `${user.email}`,
+            subject: 'Link To Reset Password',
+            text:
+              'You are receiving this because you (or someone else) have requested to reset the password of your account. \n\n' +
+              'Please click on the following link, or paste this into your browser to complete the process within one hour of receiving it: \n\n' +
+              `${process.env.CLIENT_URL}/users/reset/${token}\n` +
+              'if you did not requested this, please ignore this email and your password will remain unchanged',
+          };
+          console.log('Sending Email');
 
-  //             const { _id, email, username, role } = user;
-  //             return () =>
-  //               res.json({
-  //                 token,
-  //                 user: { _id, email, username, role },
-  //               });
-  //           } else {
-  //             let password = email + process.env.SECRET;
-  //             user = new User({ username, email, password });
-  //             user.save((err, data) => {
-  //               if (err) {
-  //                 console.log('ERROR GOOGLE LOGIN ON USER SAVE', err);
-  //                 return res.status(400).json({
-  //                   error: 'User signup failed with google',
-  //                 });
-  //               }
-  //               const token = jwt.sign(user.toJSON(), process.env.SECRET, {
-  //                 expiresIn: '1d', // 1 week
-  //               });
-  //               const { _id, email, username, role } = data;
-  //               return res.status(200).json({
-  //                 token,
-  //                 user: { _id, email, username, role },
-  //               });
-  //             });
-  //           }
-  //         });
-  //       } else {
-  //         return res.status(400).json({
-  //           error: 'Google login failed. Try again',
-  //         });
-  //       }
-  //     });
-  // },
+          transporter.sendMail(mailOptions, (err, response) => {
+            if (err) {
+              console.error('There was an error: ', err);
+            } else {
+              console.log('here is the res: ', response);
+              res
+                .status(200)
+                .json({ succes: true, msg: 'recovery email sent' });
+            }
+          });
+        });
+      }
+    });
+  },
+  newPassword: (req, res) => {
+    User.findOne({ resetToken: req.body.resetToken }, (err, data) => {
+      if (!data) console.log('Error');
+      else {
+        bcrypt.genSalt(10, (err, salt) => {
+          if (err) console.log(err);
+          bcrypt.hash(req.body.password, salt, null, (err2, hash) => {
+            if (err2) throw err2;
+            data.password = hash;
+            data.resetToken = null;
+          });
+        });
+        data.save().then(() => {
+          console.log('Password upadted successfully');
+          res.status(200).send({ message: 'password updated' });
+        });
+      }
+    });
+  },
+  reset: (req, res) => {
+    User.findOne({
+      resetToken: req.body.resetToken,
+    }).then((user) => {
+      if (user == null) {
+        console.error('password reset link is invalid or has expired');
+        res.status(403).send('password reset link is invalid or has expired');
+      } else {
+        res.status(200).send({
+          username: user.username,
+          message: 'password reset link a-ok',
+        });
+      }
+    });
+  },
+  changePassword: (req, res) => {
+    const { email, password, newPassword } = req.body;
 
-  
-  // googleController: function (user, idToken) {
-  //   return new Promise(function (resolve, reject) {
-  //     if (user == undefined) {
-  //       return reject({
-  //         code: 401,
-  //         success: false,
-  //         message: 'auth denied',
-  //       });
-  //     }
+    User.findOne({ email }, (err, user) => {
+      // if(!password ) {
+      //   return res.json({ success: false, msg:'Current password is required to create a new one'})
+      // }
 
-  //     userJson = JSON.parse(user);
-  //     console.log(idToken);
+      bcrypt.compare(password, user.password, (_err2, isMatch) => {
+        if (!password || !isMatch) {
+          return res.json({
+            success: false,
+            msg: 'Current password is required to create a new one',
+          });
+        }
+        if (isMatch) {
+          bcrypt.genSalt(10, (err, salt) => {
+            if (err) console.log(err);
+            bcrypt.hash(newPassword, salt, null, (err2, hash) => {
+              if (err2) throw err2;
+              user.password = hash;
+            });
+          });
+          user.save().then(() => {
+            console.log('Password upadted successfully');
+            res.status(200).send({ message: 'password updated' });
+          });
+        } else {
+          res.json({ success: false });
+        }
+      });
+    });
+  },
+  addOrWithdrawRequest: (req, res) => {
+    const { email, amount, addOrWithdraw } = req.body;
+    if (email == '') {
+      res.status(400).send('Not authenticated');
+    }
+    User.findOne({ email }).then((user) => {
+      const mailOptions = {
+        from: `${user.email}`,
+        to: 'smartfunds54@gmail.com',
+        subject: 'Add or withdraw money request',
+        text:
+          `${user.username} : ${user.email} ---- is requesting for ${addOrWithdraw} fund\n` +
+          `Total amount ${user.username} wants to ${addOrWithdraw} is ${amount}\n\n` +
+          'Get back to the user and consider the request',
+      };
 
-  //     firebaseAdmin
-  //       .auth()
-  //       .verifyIdToken(idToken)
-  //       .then(function (decodeToken) {
-  //         User.findOne({ googleId: userJson.uid }).then(function (user) {
-  //           console.log(user);
+      console.log('Send Email');
 
-  //           if (!user) {
-  //             new User({
-  //               name: userJson.displaName,
-  //               email: userJson.email,
-  //               googleId: userJson.uid,
-  //             })
-  //               .save()
-  //               .then(function (err, user) {
-  //                 resolve({
-  //                   code: 200,
-  //                   success: true,
-  //                   message: 'auth success: new user created',
-  //                   user: user,
-  //                 });
-  //               });
-  //           } else {
-  //             resolve({
-  //               code: 200,
-  //               success: true,
-  //               message: 'auth success: existing user',
-  //               user: user,
-  //             });
-  //           }
-  //         });
-  //       })
-  //       .catch(function (err) {
-  //         console.log(err);
-  //         reject({
-  //           code: 401,
-  //           success: false,
-  //           message: 'auth denied',
-  //           error: err,
-  //         });
-  //       });
-  //   });
-  // },
+      transporter.sendMail(mailOptions, (err, response) => {
+        if (err) {
+          console.error('There was an error: ', err);
+          res.json({success: false, msg: 'Request mail not sent due to some technical error'})
+        } else {
+          console.log('Here is the response', response);
+          res
+            .status(200)
+            .json({ success: true, msg: 'Request email has been sent ' });
+        }
+      });
+    });
+  },
+
 };
