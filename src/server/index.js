@@ -23,7 +23,7 @@ if (process.env.NODE_ENV !== 'test') {
  
 server.use(cors());
 server.use(express.json());
-server.use(express.static(path.join(__dirname, '../../../frontend/build')))
+// server.use(express.static(path.join(__dirname, '../../../frontend/build')))
 server.use('/api/users', users);
 server.use('/api/admin', admin);
 
